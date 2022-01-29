@@ -53,7 +53,10 @@ public class ApiController {
             throw new YyghException( ResultCodeEnum.SIGN_ERROR );
         }
         //调用Service里的方法实现根据医院编号查询
-        Hospital hospital=hospitalService.getByHosCode(hoscode);
+
+            Hospital hospital=hospitalService.getByHosCode(hoscode);
+
+
         return Result.ok();
     }
 

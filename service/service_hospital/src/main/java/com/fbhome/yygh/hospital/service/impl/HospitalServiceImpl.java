@@ -12,10 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Service
 public class HospitalServiceImpl implements HospitalService {
@@ -30,8 +27,8 @@ public class HospitalServiceImpl implements HospitalService {
         String mapString = JSONObject.toJSONString( paramMap );
         Hospital hospital = JSONObject.parseObject( mapString, Hospital.class );
         // 先判断是否存在相同的数据
-        String hashcode = hospital.getHoscode();
-        Hospital hospitalIsExist=hospitalRepository.getHospitalByHoscode(hashcode);
+        String hoscode = hospital.getHoscode();
+        Hospital hospitalIsExist=hospitalRepository.getHospitalByHoscode(hoscode);
         // 如果存在，进行修改
         if(hospitalIsExist!=null){
             Random r = new Random();
@@ -80,7 +77,74 @@ public class HospitalServiceImpl implements HospitalService {
 
         return pages;
     }
+    //更新医院上线状态
+    @Override
+    public void updateStatus(String id, Integer status) {
+        //根据id查询医院信息
+        Hospital hospital = hospitalRepository.findById( id ).get();
+        hospital.setStatus( status );
+        hospital.setUpdateTime( new Date() );
+        hospitalRepository.save( hospital );
+    }
+    //医院详情信息
+    @Override
+    public Map<String,Object> getHospById(String id) {
+        Map<String,Object> result=new HashMap<>();
+        Hospital hospital =  this.setHospitalClass(hospitalRepository.findById( id ).get());
+        //医院基本信息(包含医院等级)
+        result.put( "hospital",hospital );
+        //单独处理更直观
+        result.put( "bookingRule",hospital.getBookingRule() );
+        // 不需要重复返回
+        hospital.setBookingRule( null );
+        return result;
+    }
 
+    @Override
+    public String getHospName(String hoscode) {
+        Hospital hospital = hospitalRepository.getHospitalByHoscode( hoscode );
+        if(hospital!=null){
+            return hospital.getHosname();
+        }
+        return null;
+    }
+    //根据医院名称做查询
+    @Override
+    public List<Hospital> findByHosName(String hosname) {
+        return hospitalRepository.findHospitalByHosnameLike(hosname);
+    }
+    //实现根据医院编号查询
+    @Override
+    public Hospital getByHoscode(String hoscode) {
+        Hospital hospital = hospitalRepository.getHospitalByHoscode(hoscode);
+        return hospital;
+    }
+    //根据医院编号获取医院科室的挂号详情信息
+    @Override
+    public Map<String, Object> item(String hoscode) {
+        Map<String, Object> result = new HashMap<>();
+        //医院详情
+        Hospital hospital = this.setHospitalHosType(this.getByHoscode(hoscode));
+        result.put("hospital", hospital);
+        //预约规则
+        result.put("bookingRule", hospital.getBookingRule());
+        //不需要重复返回
+        hospital.setBookingRule(null);
+        return result;
+    }
+
+    //获取查询到的医院集合，遍历进行医院等级封装
+    private Hospital setHospitalHosType(Hospital hospital) {
+        //根据dictCode和value获取医院等级名称
+        String hostypeString = dictFeignClient.getName("Hostype", hospital.getHostype());
+        //查询省，市，地区
+        String provinceString = dictFeignClient.getName(hospital.getProvinceCode());
+        String cityString = dictFeignClient.getName(hospital.getCityCode());
+        String districtString = dictFeignClient.getName(hospital.getDistrictCode());
+        hospital.getParam().put("hostypeString",hostypeString);
+        hospital.getParam().put("fullAddress",provinceString + cityString + districtString);
+        return hospital;
+    }
 
     //获取查询list集合，遍历进行医院等级封装
     private Hospital setHospitalClass(Hospital hospital) {

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -62,7 +63,7 @@ public final class HttpUtil {
 				os.flush();
 				os.close();
 			}
-			BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream(),"utf-8"));
+			BufferedReader in = new BufferedReader(new InputStreamReader(httpcon.getInputStream(), StandardCharsets.UTF_8));
 			String inputLine;
 			StringBuilder bankXmlBuffer = new StringBuilder();
 			while ((inputLine = in.readLine()) != null) {  
