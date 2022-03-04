@@ -65,4 +65,10 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         return map;
 
     }
+
+
+    @Override
+    public boolean save(UserInfo entity) {
+        return false;
+    }
 }
