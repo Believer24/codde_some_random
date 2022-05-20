@@ -9,4 +9,6 @@ public interface UserInfoService {
     Map<String, Object> loginUser(LoginVo loginVo);
 
     boolean save(UserInfo userInfo);
+
+    UserInfo selectWxInfoOpenId(String openid);
 }

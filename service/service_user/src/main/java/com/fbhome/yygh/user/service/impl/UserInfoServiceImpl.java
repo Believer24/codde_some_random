@@ -31,6 +31,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         QueryWrapper<UserInfo> wrapper=new QueryWrapper<>();
         wrapper.eq( "phone",phone );
         UserInfo userInfo=baseMapper.selectOne( wrapper );
+
         //第一次使用这个手机号进行登录
         if(userInfo==null){
             //添加信息到数据库
@@ -66,9 +67,27 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
 
     }
 
-
+    /**
+     * 保存用户信息
+     * @param entity
+     * @return
+     */
     @Override
     public boolean save(UserInfo entity) {
+
         return false;
+    }
+
+    /**
+     * 根据openId查询用户信息
+     * @param openid
+     * @return
+     */
+    @Override
+    public UserInfo selectWxInfoOpenId(String openid) {
+        QueryWrapper<UserInfo> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq( "openid",openid );
+        UserInfo userInfo=baseMapper.selectOne( queryWrapper );
+        return userInfo;
     }
 }

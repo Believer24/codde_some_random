@@ -17,6 +17,9 @@
         <module>service_client</module>
         <module>service_gateway</module>
         <module>service/service_msn</module>
+        <module>servvice/service_oss</module>
+        <module>service_oss</module>
+        <module>service/untitled</module>
     </modules>
 
     <parent>

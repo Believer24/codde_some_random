@@ -20,6 +20,8 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.alibaba.fastjson.JSON.parseObject;
+
 //微信操作接口
 @Controller
 //不返回数据，仅满足页面跳转
@@ -28,13 +30,13 @@ import java.util.Map;
 public class WeixinApiController {
     @Autowired
     private UserInfoService userInfoService;
-
+    private static final String OPEN_ID = "openid";
     @GetMapping("callback")
     public String callback(String code,String state) {
         //1.获取临时票据 code
-        System.out.println( "code :" + code );
+
         //2.拿code 和微信id和密钥，请求微信固定地址，得到两个值 StringBuffer是线程安全的
-        StringBuffer baseAccessTokenUrl = new StringBuffer()
+        StringBuilder baseAccessTokenUrl = new StringBuilder()
                 .append( "https://api.weixin.qq.com/sns/oauth2/access_token" )
                 .append( "?appid=%s" )
                 .append( "&secret=%s" )
@@ -49,27 +51,31 @@ public class WeixinApiController {
         //使用httpclient请求这个地址
         try {
             String accesstokenInfo = HttpClientUtils.get( accessTokenUrl );
-            System.out.println( "accesstokenInfo:" + accesstokenInfo );
-            JSONObject jsonObject = JSONObject.parseObject( accesstokenInfo );
+
+            JSONObject jsonObject = parseObject( accesstokenInfo );
             String access_token = jsonObject.getString( "access_token" );
-            String openid = jsonObject.getString( "openid" );
-            //第三步 拿着openid和access_token请求微信地址，得到扫描人信息
-            String baseUserInfoUrl = "https://api.weixin.qq.com/sns/userinfo" +
-                    "?access_token=%s" +
-                    "&openid=%s";
-            String userInfoUrl=String.format( baseUserInfoUrl,access_token,openid );
-            String resultInfo=HttpClientUtils.get(userInfoUrl);
-            System.out.println("resultInfo:"+resultInfo);
-            //解析用户信息
-            JSONObject resultUserInfoJson = JSONObject.parseObject(resultInfo);
-            String nickname = resultUserInfoJson.getString("nickname");  //昵称
-            String headimgurl = resultUserInfoJson.getString("headimgurl");  //头像
-            //获取扫描人信息
-            UserInfo userInfo=new UserInfo();
-            userInfo.setName( nickname );
-            userInfo.setOpenid( openid );
-            userInfo.setStatus( 1 );
-            userInfoService.save(userInfo);
+            String openid = jsonObject.getString( OPEN_ID );
+            UserInfo userInfo=userInfoService.selectWxInfoOpenId(openid);
+            if(userInfo==null){    //数据库不存在
+                //第三步 拿着openid和access_token请求微信地址，得到扫描人信息
+                String baseUserInfoUrl = "https://api.weixin.qq.com/sns/userinfo" +
+                        "?access_token=%s" +
+                        "&openid=%s";
+                String userInfoUrl=String.format( baseUserInfoUrl,access_token,openid );
+                String resultInfo=HttpClientUtils.get(userInfoUrl);
+
+                //解析用户信息
+                JSONObject resultUserInfoJson = parseObject(resultInfo);
+                String nickname = resultUserInfoJson.getString("nickname");  //昵称
+
+                //获取扫描人信息
+                userInfo=new UserInfo();
+                userInfo.setName( nickname );
+                userInfo.setOpenid( openid );
+                userInfo.setStatus( 1 );
+                userInfoService.save(userInfo);
+            }
+
             //返回name和token字符串
             Map<String,Object>  map=new HashMap<>();
             String name = userInfo.getName();
@@ -84,16 +90,16 @@ public class WeixinApiController {
             //如果为空，返回openid值是空字符串
             //前端判断，如果openid不为空，绑定手机号，反之不绑定手机号
             if(StringUtils.isEmpty(userInfo.getPhone())) {
-                map.put("openid", userInfo.getOpenid());
+                map.put(OPEN_ID, userInfo.getOpenid());
             } else {
-                map.put("openid", "");
+                map.put(OPEN_ID, "");
             }
             String token = JwtHelper.createToken(userInfo.getId(), name);
             map.put("token", token);
             //跳转到前端页面
             return "redirect:" + ConstantWxProperties.YYGH_BASE_URL +
                     "/weixin/callback?token=" + map.get("token") +
-                    "&openid=" + map.get("openid") +
+                    "&openid=" + map.get(OPEN_ID) +
                     "&name=" + URLEncoder.encode((String)map.get("name"),"utf-8");
         } catch ( Exception e ) {
             e.printStackTrace();
@@ -104,7 +110,7 @@ public class WeixinApiController {
     //返回生成二维码所需要的参数
     @GetMapping("getLoginParam")
     @ResponseBody
-    public Result genQrConnect(){
+    public Result<Object> genQrConnect(){
 
         try {
             Map<String,Object> map=new HashMap<>();
