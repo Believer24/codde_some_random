@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fbhome.yygh.common.exception.YyghException;
 import com.fbhome.yygh.common.helper.JwtHelper;
 import com.fbhome.yygh.common.result.ResultCodeEnum;
+import com.fbhome.yygh.enums.AuthStatusEnum;
 import com.fbhome.yygh.model.user.UserInfo;
 import com.fbhome.yygh.user.mapper.UserInfoMapper;
 import com.fbhome.yygh.user.service.UserInfoService;
 import com.fbhome.yygh.vo.user.LoginVo;
+import com.fbhome.yygh.vo.user.UserAuthVo;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -88,6 +90,37 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         QueryWrapper<UserInfo> queryWrapper=new QueryWrapper<>();
         queryWrapper.eq( "openid",openid );
         UserInfo userInfo=baseMapper.selectOne( queryWrapper );
+        return userInfo;
+    }
+
+    /**
+     * 用户认证方法
+     * @param userId
+     * @param userAuthVo
+     */
+    @Override
+    public void userAuth(Long userId, UserAuthVo userAuthVo) {
+        //根据用户id查询用户信息
+        UserInfo userInfo=baseMapper.selectById( userId );
+
+        //设置认证信息
+        userInfo.setName( userAuthVo.getName() );
+        userInfo.setCertificatesType( userAuthVo.getCertificatesType() );
+        userInfo.setCertificatesNo( userAuthVo.getCertificatesNo() );
+        userInfo.setCertificatesUrl( userAuthVo.getCertificatesUrl() );
+        userInfo.setStatus( AuthStatusEnum.AUTH_RUN.getStatus() );
+        //进行信息更新
+        baseMapper.updateById( userInfo );
+    }
+
+    /**
+     * 根据id获取UserInfo
+     * @param userId
+     * @return
+     */
+    @Override
+    public UserInfo getById(Long userId) {
+        UserInfo userInfo=baseMapper.selectById( userId );
         return userInfo;
     }
 }
