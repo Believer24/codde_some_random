@@ -32,8 +32,13 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         return patients;
     }
 
+    @Override
+    public Patient getPatientById(Long id) {
+        return this.packPatient( baseMapper.selectById( id ) );
+    }
+
     /**
-     * 封装Patient对象里字典的中文含义
+     * 封装Patient对象里字典的中文含义,远程调用cmn服务
      * @param item
      */
     public Patient packPatient(Patient item){
